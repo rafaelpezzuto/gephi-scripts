@@ -1,9 +1,12 @@
 import org.gephi.appearance.api.*;
 import org.gephi.appearance.plugin.PartitionElementColorTransformer;
-import org.gephi.appearance.plugin.RankingElementColorTransformer;
-import org.gephi.appearance.plugin.RankingNodeSizeTransformer;
 import org.gephi.appearance.plugin.UniqueNodeSizeTransformer;
-import org.gephi.graph.api.*;
+import org.gephi.appearance.plugin.palette.Palette;
+import org.gephi.appearance.plugin.palette.PaletteManager;
+import org.gephi.graph.api.Column;
+import org.gephi.graph.api.GraphController;
+import org.gephi.graph.api.GraphModel;
+import org.gephi.graph.api.Node;
 import org.gephi.io.exporter.api.ExportController;
 import org.gephi.io.exporter.preview.PNGExporter;
 import org.gephi.io.importer.api.Container;
@@ -11,17 +14,10 @@ import org.gephi.io.importer.api.ImportController;
 import org.gephi.io.processor.plugin.DefaultProcessor;
 import org.gephi.layout.plugin.openord.OpenOrdLayout;
 import org.gephi.layout.plugin.openord.OpenOrdLayoutBuilder;
-import org.gephi.preview.api.PreviewController;
-import org.gephi.preview.api.PreviewModel;
-import org.gephi.preview.api.PreviewProperty;
 import org.gephi.project.api.ProjectController;
 import org.gephi.project.api.Workspace;
-import org.gephi.statistics.plugin.GraphDistance;
-import org.jfree.ui.Size2D;
 import org.openide.util.Lookup;
-import org.openide.util.lookup.ServiceProvider;
 
-import javax.xml.crypto.dsig.Transform;
 import java.awt.*;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -38,7 +34,7 @@ class Main {
         Container container;
 
         try {
-            File file = new File("/home/rafael/Projects/gephi-scripts/db/grafo.gdf");
+            File file = new File("db/grafo_vis.gdf");
             container = importController.importFile(file);
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -53,20 +49,33 @@ class Main {
 
         UniqueNodeSizeTransformer uniqueNodeSizeTransformer = new UniqueNodeSizeTransformer();
         uniqueNodeSizeTransformer.setSize(45);
-        for (Node n: graphModel.getDirectedGraph().getNodes()) {
+        for (Node n : graphModel.getDirectedGraph().getNodes()) {
             uniqueNodeSizeTransformer.transform(n);
         }
 
-        Column grandeArea = graphModel.getNodeTable().getColumn("grande_area");
+        Column grandeArea = graphModel.getNodeTable().getColumn("grandearea");
         Function grandeAreaFunction = appearanceModel.getNodeFunction(graphModel.getDirectedGraph(), grandeArea, PartitionElementColorTransformer.class);
+        Partition partition = ((PartitionFunction) grandeAreaFunction).getPartition();
+        partition.setColor("Ciencias Humanas", Color.decode("#984ea3"));
+        partition.setColor("Ciencias da Saude", Color.decode("#ffff33"));
+        partition.setColor("Ciencias Exatas E da Terra", Color.decode("#4daf4a"));
+        partition.setColor("Ciencias Sociais Aplicadas", Color.decode("#ff7f00"));
+        partition.setColor("Engenharias", Color.decode("#a65628"));
+        partition.setColor("Ciencias Agrarias", Color.decode("#e41a1c"));
+        partition.setColor("Ciencias Biologicas", Color.decode("#377eb8"));
+        partition.setColor("Linguistica Letras E Artes", Color.decode("#f781bf"));
+        partition.setColor("Outros", Color.decode("#999999"));
+        partition.setColor("", Color.decode("#dddddd"));
+
+        appearanceController.transform(grandeAreaFunction);
 
         OpenOrdLayout ooLayout = new OpenOrdLayout(new OpenOrdLayoutBuilder());
         ooLayout.setGraphModel(graphModel);
         ooLayout.resetPropertiesValues();
-        ooLayout.setNumIterations(750);
+        ooLayout.setNumIterations(20000);
         ooLayout.initAlgo();
 
-        for (int i = 0; i < 1500 & ooLayout.canAlgo(); i++) {
+        for (int i = 0; i < 2 * ooLayout.getNumIterations() & ooLayout.canAlgo(); i++) {
             ooLayout.goAlgo();
         }
         ooLayout.endAlgo();
@@ -79,7 +88,7 @@ class Main {
         pngExporter.execute();
 
         try {
-            exportController.exportFile(new File("/home/rafael/Projects/gephi-scripts/db/grafo.png"));
+            exportController.exportFile(new File("db/grafo_vis.png"));
         } catch (IOException e) {
             e.printStackTrace();
         }

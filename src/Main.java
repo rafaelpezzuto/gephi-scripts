@@ -64,14 +64,32 @@ class Main {
         appearanceController.transform(partitionAttributeFunction);
     }
 
-    private void runOpenOrd(Integer numInteractions) {
+    private void runOpenOrd(Integer numInteractions, Float edgeCut, Integer liquid, Integer expansion, Integer cooldown, Integer crunch, Integer simmer) {
         OpenOrdLayout ooLayout = new OpenOrdLayout(new OpenOrdLayoutBuilder());
         ooLayout.setGraphModel(graphModel);
         ooLayout.resetPropertiesValues();
+
         ooLayout.setNumIterations(numInteractions);
-        ooLayout.setEdgeCut(0.9F);
+        ooLayout.setEdgeCut(edgeCut);
+        ooLayout.setLiquidStage(liquid);
+        ooLayout.setExpansionStage(expansion);
+        ooLayout.setCooldownStage(cooldown);
+        ooLayout.setCrunchStage(crunch);
+        ooLayout.setSimmerStage(simmer);
+
         ooLayout.getBuilder().buildLayout();
         ooLayout.initAlgo();
+
+        System.out.println("CHECKING OPEN-ORD SETTINGS");
+        System.out.println("--------------------------");
+        System.out.println(" Iteractions " + ooLayout.getNumIterations());
+        System.out.println(" EdgeCut " + ooLayout.getEdgeCut());
+        System.out.println(" Liquid " + ooLayout.getLiquidStage());
+        System.out.println(" Expansion " + ooLayout.getExpansionStage());
+        System.out.println(" Cooldown " + ooLayout.getCooldownStage());
+        System.out.println(" Crunch " + ooLayout.getCrunchStage());
+        System.out.println(" Simmer " + ooLayout.getSimmerStage());
+        System.out.println("--------------------------");
 
         for (int i = 0; i < 2 * ooLayout.getNumIterations() & ooLayout.canAlgo(); i++) {
             ooLayout.goAlgo();
@@ -85,16 +103,24 @@ class Main {
 
 
     public static void main(String args[]) {
-        String graphFile = args[0];
-        Integer numInteractions = Integer.valueOf(args[1]);
-        String columnName = args[3];
-        String outFile = args[4];
+        String inGDFFile = args[0];
+        String partitionAttribute = args[1];
+
+        Integer numInteractions = Integer.valueOf(args[2]);
+        Float edgeCut = Float.valueOf(args[3]);
+        Integer liquid = Integer.valueOf(args[4]);
+        Integer expansion = Integer.valueOf(args[5]);
+        Integer cooldown = Integer.valueOf(args[6]);
+        Integer crunch = Integer.valueOf(args[7]);
+        Integer simmer = Integer.valueOf(args[8]);
+
+        String outGephiFile = args[9];
 
         Main m = new Main();
         m.startProject();
-        m.importGraph(new File(graphFile));
-        m.setOpenOrdPartitions(columnName);
-        m.runOpenOrd(numInteractions);
-        m.saveProject(new File(outFile));
+        m.importGraph(new File(inGDFFile));
+        m.setOpenOrdPartitions(partitionAttribute);
+        m.runOpenOrd(numInteractions, edgeCut, liquid, expansion, cooldown, crunch, simmer);
+        m.saveProject(new File(outGephiFile));
     }
 }

@@ -1,13 +1,8 @@
-import com.itextpdf.text.PageSize;
 import org.gephi.appearance.api.*;
 import org.gephi.appearance.plugin.PartitionElementColorTransformer;
-import org.gephi.appearance.plugin.UniqueNodeSizeTransformer;
 import org.gephi.graph.api.Column;
 import org.gephi.graph.api.GraphController;
 import org.gephi.graph.api.GraphModel;
-import org.gephi.graph.api.Node;
-import org.gephi.io.exporter.api.ExportController;
-import org.gephi.io.exporter.preview.PDFExporter;
 import org.gephi.io.importer.api.Container;
 import org.gephi.io.importer.api.ImportController;
 import org.gephi.io.processor.plugin.DefaultProcessor;
@@ -18,9 +13,7 @@ import org.gephi.project.api.Workspace;
 import org.openide.util.Lookup;
 
 import java.awt.*;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.IOException;
 
 class Main {
 
@@ -52,18 +45,10 @@ class Main {
         appearanceModel = appearanceController.getModel();
     }
 
-    private void setNodeSize(Integer size) {
-        UniqueNodeSizeTransformer uniqueNodeSizeTransformer = new UniqueNodeSizeTransformer();
-        uniqueNodeSizeTransformer.setSize(size);
-        for (Node n : graphModel.getDirectedGraph().getNodes()) {
-            uniqueNodeSizeTransformer.transform(n);
-        }
-    }
-
     private void setOpenOrdPartitions(String columnName) {
         Column column = graphModel.getNodeTable().getColumn(columnName);
-        Function grandeAreaFunction = appearanceModel.getNodeFunction(graphModel.getDirectedGraph(), column, PartitionElementColorTransformer.class);
-        Partition partition = ((PartitionFunction) grandeAreaFunction).getPartition();
+        Function partitionAttributeFunction = appearanceModel.getNodeFunction(graphModel.getDirectedGraph(), column, PartitionElementColorTransformer.class);
+        Partition partition = ((PartitionFunction) partitionAttributeFunction).getPartition();
 
         partition.setColor("Ciencias Humanas", Color.decode("#984ea3"));
         partition.setColor("Ciencias da Saude", Color.decode("#ffff33"));
@@ -76,7 +61,7 @@ class Main {
         partition.setColor("Outros", Color.decode("#999999"));
         partition.setColor("", Color.decode("#dddddd"));
 
-        appearanceController.transform(grandeAreaFunction);
+        appearanceController.transform(partitionAttributeFunction);
     }
 
     private void runOpenOrd(Integer numInteractions) {
@@ -84,6 +69,8 @@ class Main {
         ooLayout.setGraphModel(graphModel);
         ooLayout.resetPropertiesValues();
         ooLayout.setNumIterations(numInteractions);
+        ooLayout.setEdgeCut(0.9F);
+        ooLayout.getBuilder().buildLayout();
         ooLayout.initAlgo();
 
         for (int i = 0; i < 2 * ooLayout.getNumIterations() & ooLayout.canAlgo(); i++) {
@@ -92,34 +79,22 @@ class Main {
         ooLayout.endAlgo();
     }
 
-    private void exportLayoutPDF(File outFile) {
-        ExportController exportController = Lookup.getDefault().lookup(ExportController.class);
-        PDFExporter pdfExporter = (PDFExporter) exportController.getExporter("pdf");
-        pdfExporter.setPageSize(PageSize.A0);
-        pdfExporter.setWorkspace(workspace);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        exportController.exportStream(baos, pdfExporter);
-
-        try {
-            exportController.exportFile(outFile);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    private void saveProject(File outFile) {
+        projectController.saveProject(projectController.getCurrentProject(), outFile).run();
     }
+
 
     public static void main(String args[]) {
         String graphFile = args[0];
         Integer numInteractions = Integer.valueOf(args[1]);
-        Integer nodeSize = Integer.valueOf(args[2]);
         String columnName = args[3];
         String outFile = args[4];
 
         Main m = new Main();
         m.startProject();
         m.importGraph(new File(graphFile));
-        m.setNodeSize(nodeSize);
         m.setOpenOrdPartitions(columnName);
         m.runOpenOrd(numInteractions);
-        m.exportLayoutPDF(new File(outFile));
+        m.saveProject(new File(outFile));
     }
 }
